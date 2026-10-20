@@ -6,6 +6,7 @@ import { TrackingEventPayload } from '@/types/analytics';
 const VALID_EVENT_NAMES = new Set([
   'session_start',
   'page_view',
+  'link_click',
   'view_item',
   'add_to_cart',
   'begin_checkout',
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
-    const { eventId, visitorId, sessionId, eventName, timestamp, pagePath } = body;
+    const { eventId, visitorId, sessionId, eventName, timestamp, pagePath, workspaceId } = body;
 
     // Validate required fields
     if (!eventId || typeof eventId !== 'string' || eventId.length > 100) {
@@ -50,9 +51,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid pagePath' }, { status: 400 });
     }
 
-    // Sanitize string dimensions (prevent giant strings)
+    // Sanitize string dimensions
     const sanitizedEvent: TrackingEventPayload = {
       ...body,
+      workspaceId: workspaceId || 'ws_default',
       utm_source: body.utm_source ? body.utm_source.substring(0, 50).toLowerCase() : undefined,
       utm_medium: body.utm_medium ? body.utm_medium.substring(0, 50).toLowerCase() : undefined,
       utm_campaign: body.utm_campaign ? body.utm_campaign.substring(0, 80).toLowerCase() : undefined,

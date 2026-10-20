@@ -36,6 +36,7 @@ export type EventListener = (event: TrackingEventPayload) => void;
 class ClientTracker {
   private visitorId = '';
   private sessionId = '';
+  private workspaceId = 'ws_default';
   private attribution: AttributionData = {
     firstTouch: null,
     lastNonDirect: null,
@@ -92,25 +93,13 @@ class ClientTracker {
     }
     this.visitorId = vid;
 
-    // 2. Resolve Session & Timeout
-    let sid = getStorage(COOKIE_SESSION_KEY);
-    const lastAct = parseInt(getStorage(COOKIE_LAST_ACTIVITY) || '0', 10);
-    const isSessionExpired = !sid || now - lastAct > SESSION_TIMEOUT_MS;
-    let isNewSession = false;
-
-    if (isSessionExpired) {
-      sid = generateId('sid');
-      setStorage(COOKIE_SESSION_KEY, sid);
-      setStorage(SESSION_START_EMITTED_KEY, '');
-      isNewSession = true;
-    }
-    this.sessionId = sid || generateId('sid');
-    setStorage(COOKIE_LAST_ACTIVITY, now.toString());
-
     // 3. Parse Traffic Origin & UTMs
     const currentUrl = window.location.href;
     const referrer = document.referrer;
     const parsed = parseTrafficOrigin(currentUrl, referrer);
+    if (parsed.workspaceId) {
+      this.workspaceId = parsed.workspaceId;
+    }
 
     // Retrieve existing attribution
     let firstTouch = null;
@@ -126,6 +115,29 @@ class ClientTracker {
       if (rawLt) lastNonDirect = JSON.parse(rawLt);
     } catch {}
 
+    // Check if user came via a fresh UTM campaign touch
+    const isNewCampaignArrival = !parsed.isDirect && parsed.source !== 'internal';
+    const isCampaignSwitch = isNewCampaignArrival && (
+      !lastNonDirect ||
+      lastNonDirect.source !== parsed.source ||
+      lastNonDirect.campaign !== parsed.campaign
+    );
+
+    // 2. Resolve Session & Timeout (or new campaign click)
+    let sid = getStorage(COOKIE_SESSION_KEY);
+    const lastAct = parseInt(getStorage(COOKIE_LAST_ACTIVITY) || '0', 10);
+    const isSessionExpired = !sid || now - lastAct > SESSION_TIMEOUT_MS;
+    let isNewSession = false;
+
+    if (isSessionExpired || isCampaignSwitch) {
+      sid = generateId('sid');
+      setStorage(COOKIE_SESSION_KEY, sid);
+      setStorage(SESSION_START_EMITTED_KEY, '');
+      isNewSession = true;
+    }
+    this.sessionId = sid || generateId('sid');
+    setStorage(COOKIE_LAST_ACTIVITY, now.toString());
+
     // Determine current campaign touch
     const currentTouch = {
       source: parsed.source,
@@ -138,7 +150,7 @@ class ClientTracker {
     };
 
     // If new attribution came from UTMs or non-direct referrer
-    if (!parsed.isDirect && parsed.source !== 'internal') {
+    if (isNewCampaignArrival) {
       const touchRecord = {
         source: parsed.source,
         medium: parsed.medium,
@@ -292,6 +304,7 @@ class ClientTracker {
 
     const eventPayload: TrackingEventPayload = {
       eventId: generateId('evt'),
+      workspaceId: this.workspaceId,
       timestamp: new Date().toISOString(),
       visitorId: this.visitorId,
       sessionId: this.sessionId,

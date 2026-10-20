@@ -7,6 +7,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const sources = await analyticsDb.getSourcesReport();
+  const { searchParams } = new URL(req.url);
+  const workspaceId = searchParams.get('workspaceId') || undefined;
+
+  const sources = await analyticsDb.getSourcesReport(workspaceId);
   return NextResponse.json(sources);
 }

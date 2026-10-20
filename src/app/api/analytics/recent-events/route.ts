@@ -11,10 +11,12 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, parseInt(searchParams.get('limit') || '50', 10));
   const eventName = searchParams.get('eventName') || undefined;
   const source = searchParams.get('source') || undefined;
+  const workspaceId = searchParams.get('workspaceId') || undefined;
 
   const events = await analyticsDb.getRecentEvents(limit, {
     eventName,
     source,
+    workspaceId,
   });
 
   return NextResponse.json(events);

@@ -9,6 +9,7 @@ export interface ParsedTrafficInfo {
   referrer?: string;
   referrerHost?: string;
   isDirect: boolean;
+  workspaceId?: string;
 }
 
 /**
@@ -24,6 +25,7 @@ export function parseTrafficOrigin(currentUrlStr: string, referrerStr?: string):
     const utm_campaign = searchParams.get('utm_campaign')?.trim().toLowerCase();
     const utm_content = searchParams.get('utm_content')?.trim();
     const utm_term = searchParams.get('utm_term')?.trim();
+    const workspaceId = searchParams.get('utm_project')?.trim() || searchParams.get('workspaceId')?.trim();
 
     let referrerHost = '';
     if (referrerStr && referrerStr.trim().length > 0) {
@@ -46,6 +48,7 @@ export function parseTrafficOrigin(currentUrlStr: string, referrerStr?: string):
         referrer: referrerStr || undefined,
         referrerHost: referrerHost || undefined,
         isDirect: false,
+        workspaceId: workspaceId || undefined,
       };
     }
 

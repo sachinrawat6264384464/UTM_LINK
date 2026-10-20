@@ -39,14 +39,55 @@ export type AttributionData = {
 export type EventType =
   | 'session_start'
   | 'page_view'
+  | 'link_click'
   | 'view_item'
   | 'add_to_cart'
   | 'begin_checkout'
   | 'purchase'
   | 'custom_event';
 
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface TrackedLink {
+  id: string;
+  workspaceId: string;
+  shortCode: string;
+  title: string;
+  destinationUrl: string;
+  utmSource: string;
+  utmMedium: string;
+  utmCampaign: string;
+  utmContent?: string;
+  utmTerm?: string;
+  clicksCount: number;
+  createdAt: string;
+  lastClickedAt?: string;
+}
+
+export interface LinkClick {
+  id: string;
+  workspaceId: string;
+  linkId: string;
+  shortCode: string;
+  destinationUrl: string;
+  utmSource: string;
+  utmMedium: string;
+  utmCampaign: string;
+  ip?: string;
+  userAgent?: string;
+  referrer?: string;
+  clickedAt: string;
+}
+
 export interface TrackingEventPayload {
   eventId: string;
+  workspaceId?: string;
   timestamp: string; // ISO string
   visitorId: string;
   sessionId: string;
@@ -82,6 +123,7 @@ export interface OverviewMetrics {
   totalVisitors: number;
   totalSessions: number;
   totalPageViews: number;
+  totalLinkClicks: number;
   uniqueVisitors: number;
   totalAddToCart: number;
   totalPurchases: number;
@@ -96,6 +138,7 @@ export interface TrafficSourceMetric {
   visitors: number;
   sessions: number;
   pageViews: number;
+  clicks: number;
   purchases: number;
   revenue: number;
   conversionRate: number;
@@ -108,6 +151,7 @@ export interface CampaignMetric {
   visitors: number;
   sessions: number;
   pageViews: number;
+  clicks: number;
   purchases: number;
   revenue: number;
   conversionRate: number;
@@ -115,6 +159,7 @@ export interface CampaignMetric {
 
 export interface RecentEventItem {
   id: string;
+  workspaceId?: string;
   eventId: string;
   eventName: string;
   eventTimestamp: string;

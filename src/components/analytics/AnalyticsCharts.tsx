@@ -2,26 +2,27 @@
 
 import React, { useState } from 'react';
 
-interface TimelinePoint {
+export interface TimelinePoint {
   date: string;
   visitors: number;
   sessions: number;
   pageViews: number;
   purchases: number;
+  clicks?: number;
 }
 
-interface SourcePoint {
+export interface SourcePoint {
   source: string;
   count: number;
 }
 
-interface PurchasePoint {
+export interface PurchasePoint {
   source: string;
   purchases: number;
   revenue: number;
 }
 
-interface CampaignPoint {
+export interface CampaignPoint {
   campaign: string;
   revenue: number;
   purchases: number;
@@ -32,13 +33,17 @@ export function VisitorsTimelineChart({ data }: { data: TimelinePoint[] }) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex h-56 items-center justify-center text-sm text-slate-400">
-        No visitor activity recorded yet.
+      <div className="flex h-56 flex-col items-center justify-center text-sm text-slate-400 gap-2">
+        <span>No link clicks or visitor activity in this date range.</span>
+        <span className="text-xs text-slate-500">Create a tracked link below or switch to another project.</span>
       </div>
     );
   }
 
-  const maxVal = Math.max(...data.map((d) => Math.max(d.sessions, d.pageViews)), 5);
+  const maxVal = Math.max(
+    ...data.map((d) => Math.max(d.sessions, d.pageViews, d.clicks || 0)),
+    4
+  );
   const height = 180;
   const width = 600;
   const paddingX = 40;
@@ -52,6 +57,12 @@ export function VisitorsTimelineChart({ data }: { data: TimelinePoint[] }) {
     return { x, y, data: d };
   });
 
+  const pointsClicks = data.map((d, i) => {
+    const x = paddingX + (i / Math.max(1, data.length - 1)) * chartW;
+    const y = height - paddingY - ((d.clicks || 0) / maxVal) * chartH;
+    return { x, y, data: d };
+  });
+
   const pointsPV = data.map((d, i) => {
     const x = paddingX + (i / Math.max(1, data.length - 1)) * chartW;
     const y = height - paddingY - (d.pageViews / maxVal) * chartH;
@@ -59,6 +70,7 @@ export function VisitorsTimelineChart({ data }: { data: TimelinePoint[] }) {
   });
 
   const sessionPath = pointsSessions.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
+  const clicksPath = pointsClicks.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
   const pvPath = pointsPV.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
 
   const areaSession = `${sessionPath} L ${pointsSessions[pointsSessions.length - 1].x} ${height - paddingY} L ${pointsSessions[0].x} ${height - paddingY} Z`;
@@ -66,17 +78,21 @@ export function VisitorsTimelineChart({ data }: { data: TimelinePoint[] }) {
   return (
     <div className="relative w-full overflow-hidden">
       <div className="flex items-center justify-between mb-3 text-xs text-slate-400">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-3 h-3 rounded-full bg-blue-500"></span>
             Sessions
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-full bg-amber-400"></span>
+            Link Clicks
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-3 h-3 rounded-full bg-emerald-500"></span>
             Page Views
           </span>
         </div>
-        <span className="text-slate-500">Max: {maxVal}</span>
+        <span className="text-slate-500">Peak: {maxVal} events</span>
       </div>
 
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48 select-none">
@@ -105,6 +121,7 @@ export function VisitorsTimelineChart({ data }: { data: TimelinePoint[] }) {
 
         {/* Line paths */}
         <path d={sessionPath} fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={clicksPath} fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="2 2" strokeLinecap="round" strokeLinejoin="round" />
         <path d={pvPath} fill="none" stroke="#10b981" strokeWidth="2" strokeDasharray="4 4" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Data points */}
@@ -138,6 +155,7 @@ export function VisitorsTimelineChart({ data }: { data: TimelinePoint[] }) {
         <div className="absolute top-2 right-4 bg-slate-900 border border-slate-700 p-2.5 rounded-lg shadow-xl text-xs z-10 pointer-events-none">
           <div className="font-semibold text-slate-200 mb-1">{data[hoveredIdx].date}</div>
           <div className="text-blue-400">Sessions: {data[hoveredIdx].sessions}</div>
+          <div className="text-amber-400">Link Clicks: {data[hoveredIdx].clicks || 0}</div>
           <div className="text-emerald-400">Page Views: {data[hoveredIdx].pageViews}</div>
           <div className="text-purple-400">Purchases: {data[hoveredIdx].purchases}</div>
         </div>
@@ -147,10 +165,11 @@ export function VisitorsTimelineChart({ data }: { data: TimelinePoint[] }) {
 }
 
 export function SourcesDonutChart({ data }: { data: SourcePoint[] }) {
-  if (!data || data.length === 0) {
+  if (!data || data.length === 0 || data.every((d) => d.count === 0)) {
     return (
-      <div className="flex h-56 items-center justify-center text-sm text-slate-400">
-        No traffic sources recorded yet.
+      <div className="flex h-56 flex-col items-center justify-center text-sm text-slate-400 gap-1">
+        <span>No traffic sources recorded yet.</span>
+        <span className="text-xs text-slate-500">Test a link from WhatsApp, LinkedIn, or Instagram.</span>
       </div>
     );
   }
@@ -189,7 +208,7 @@ export function SourcesDonutChart({ data }: { data: SourcePoint[] }) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-2xl font-bold text-white">{total}</span>
-          <span className="text-[10px] text-slate-400 uppercase tracking-wider">Sessions</span>
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider">Touchpoints</span>
         </div>
       </div>
 
@@ -214,10 +233,11 @@ export function SourcesDonutChart({ data }: { data: SourcePoint[] }) {
 }
 
 export function PurchasesBySourceBarChart({ data }: { data: PurchasePoint[] }) {
-  if (!data || data.length === 0) {
+  if (!data || data.length === 0 || data.every((d) => d.purchases === 0 && d.revenue === 0)) {
     return (
-      <div className="flex h-56 items-center justify-center text-sm text-slate-400">
-        No conversions recorded yet.
+      <div className="flex h-56 flex-col items-center justify-center text-sm text-slate-400 gap-1">
+        <span>No conversions recorded for this project yet.</span>
+        <span className="text-xs text-slate-500">Test an order from the tracking demo page.</span>
       </div>
     );
   }
@@ -250,10 +270,11 @@ export function PurchasesBySourceBarChart({ data }: { data: PurchasePoint[] }) {
 }
 
 export function RevenueByCampaignBarChart({ data }: { data: CampaignPoint[] }) {
-  if (!data || data.length === 0) {
+  if (!data || data.length === 0 || data.every((d) => d.revenue === 0)) {
     return (
-      <div className="flex h-56 items-center justify-center text-sm text-slate-400">
-        No campaign revenue yet.
+      <div className="flex h-56 flex-col items-center justify-center text-sm text-slate-400 gap-1">
+        <span>No campaign revenue yet.</span>
+        <span className="text-xs text-slate-500">Campaigns will appear when purchases are attributed.</span>
       </div>
     );
   }

@@ -8,12 +8,14 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
+  const workspaceId = searchParams.get('workspaceId') || undefined;
   const source = searchParams.get('source') || undefined;
   const campaign = searchParams.get('campaign') || undefined;
   const startDate = searchParams.get('startDate') || undefined;
   const endDate = searchParams.get('endDate') || undefined;
 
   const overview = await analyticsDb.getOverview({
+    workspaceId,
     source,
     campaign,
     startDate,
