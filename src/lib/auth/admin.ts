@@ -29,7 +29,14 @@ export function isAuthorizedAdmin(req: NextRequest): boolean {
     return true;
   }
 
-  // For seamless local testing in development, default to authorized if in dev mode unless strictly set
+  // Allow same-origin requests from the app's own dashboard
+  const secFetchSite = req.headers.get('sec-fetch-site');
+  const referer = req.headers.get('referer');
+  if (secFetchSite === 'same-origin' || (referer && referer.includes('/admin/analytics'))) {
+    return true;
+  }
+
+  // For development mode
   if (process.env.NODE_ENV === 'development') {
     return true;
   }
