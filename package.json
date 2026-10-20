@@ -1,14 +1,19 @@
 {
-  "name": "temp-app",
+  "name": "utm-tracking-analytics",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node tests/analytics.test.mjs"
   },
   "dependencies": {
+    "@neon/config": "^1.9.2",
+    "@neon/env": "^1.6.3",
+    "@neondatabase/serverless": "^1.2.0",
+    "lucide-react": "^0.560.0",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0"

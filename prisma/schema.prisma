@@ -1,0 +1,101 @@
+// Prisma Schema for Custom UTM Tracking & Analytics System
+// Compatible with PostgreSQL (Neon, Supabase, Local Postgres) and SQLite for local development
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Switch to "sqlite" for local zero-config testing if needed
+  url      = env("DATABASE_URL")
+}
+
+model Visitor {
+  id          String          @id @default(cuid())
+  visitorId   String          @unique
+  firstSeen   DateTime        @default(now())
+  lastSeen    DateTime        @updatedAt
+  sessions    Session[]
+  events      TrackingEvent[]
+  orders      Order[]
+
+  @@index([visitorId])
+  @@index([firstSeen])
+}
+
+model Session {
+  id             String          @id @default(cuid())
+  sessionId      String          @unique
+  visitorId      String
+  visitor        Visitor         @relation(fields: [visitorId], references: [visitorId], onDelete: Cascade)
+  startedAt      DateTime        @default(now())
+  lastActivityAt DateTime        @default(now())
+  landingPage    String
+  referrer       String?
+  referrerHost   String?
+  source         String
+  medium         String
+  campaign       String
+  content        String?
+  term           String?
+  events         TrackingEvent[]
+  orders         Order[]
+
+  @@index([sessionId])
+  @@index([visitorId])
+  @@index([source])
+  @@index([medium])
+  @@index([campaign])
+  @@index([startedAt])
+}
+
+model TrackingEvent {
+  id             String   @id @default(cuid())
+  eventId        String   @unique
+  sessionId      String
+  session        Session  @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  visitorId      String
+  visitor        Visitor  @relation(fields: [visitorId], references: [visitorId], onDelete: Cascade)
+  eventName      String
+  eventTimestamp DateTime @default(now())
+  pagePath       String
+  referrerHost   String?
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  metadata       Json?
+
+  @@index([eventId])
+  @@index([sessionId])
+  @@index([visitorId])
+  @@index([eventName])
+  @@index([eventTimestamp])
+  @@index([utmSource])
+  @@index([utmCampaign])
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  visitorId   String
+  visitor     Visitor  @relation(fields: [visitorId], references: [visitorId], onDelete: Cascade)
+  orderAmount Float
+  currency    String   @default("USD")
+  orderStatus String   @default("completed")
+  createdAt   DateTime @default(now())
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  items       Json?
+
+  @@index([orderId])
+  @@index([sessionId])
+  @@index([visitorId])
+  @@index([utmSource])
+  @@index([utmCampaign])
+  @@index([createdAt])
+}
